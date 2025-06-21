@@ -2,7 +2,7 @@
 resource "aws_lambda_function" "terraform_trigger" {
   function_name = "terraform-trigger-lambda"
   filename      = "modules/eventbridge/lambda/lambda_payload.zip"
-  handler       = "index.handler"
+  handler       = "index.lambda_handler"
   runtime       = "python3.8"
 
   #role = var.lambda_exec_role_arn
