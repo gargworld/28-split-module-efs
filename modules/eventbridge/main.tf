@@ -5,9 +5,12 @@ resource "aws_lambda_function" "terraform_trigger" {
   handler       = "index.lambda_handler"
   runtime       = "python3.8"
 
-  #role = var.lambda_exec_role_arn
   role = var.lambda_execution_role_arn
-
+  environment {
+    variables = {
+      PROJECT_NAME = var.codebuild_project_name  # This must match the CodeBuild project name
+    }
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_basic" {
