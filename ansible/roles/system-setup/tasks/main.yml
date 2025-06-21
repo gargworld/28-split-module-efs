@@ -1,0 +1,26 @@
+- name: system setup Ensure public DNS entries exist in /etc/resolv.conf
+  lineinfile:
+    path: /etc/resolv.conf
+    line: "{{ item }}"
+    state: present
+    insertafter: EOF
+  loop:
+    - "nameserver 8.8.8.8"
+    - "nameserver 8.8.4.4"
+
+- name: Clean Yum metadata
+  command: yum clean all
+
+- name: Rebuild Yum cache
+  command: yum makecache
+
+- name: Clean all yum metadata
+  command: yum clean metadata
+
+- name: system setup Install required dependencies
+  package:
+    name:
+      - yum-utils
+      - device-mapper-persistent-data
+      - lvm2
+    state: present

@@ -1,0 +1,17 @@
+docker_compose_path: /data/artifactory
+artifactory_compose_file: /data/artifactory/docker-compose.yml
+#
+artifactory_image: docker.bintray.io/jfrog/artifactory-oss:6.23.13
+artifactory_container_name: artifactory
+artifactory_port: 8081
+artifactory_data_dir: /data/artifactory
+postgresql_data_dir: /data/postgresql
+#
+db_user: artifactory
+db_password: artifactory
+db_name: artifactory
+db_host: postgresql
+db_port: 5432
+#
+master_key_path: /data/artifactory
+postgres_image: docker.bintray.io/postgres:9.6.11

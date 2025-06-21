@@ -1,0 +1,40 @@
+version: '2'
+services:
+  postgresql:
+    image: {{ postgres_image }}
+    container_name: postgresql
+    ports:
+     - 5432:5432
+    environment:
+     - POSTGRES_DB={{ db_name }}
+     - POSTGRES_USER={{ db_user }}
+     - POSTGRES_PASSWORD={{ db_password }}
+    volumes:
+     - {{ postgresql_data_dir }}:/var/lib/postgresql/data
+    restart: always
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 32000
+        hard: 40000
+
+  artifactory:
+    image: {{ artifactory_image }}
+    container_name: artifactory
+    ports:
+     - 8081:8081
+    depends_on:
+     - postgresql
+    links:
+     - postgresql
+    volumes:
+     - {{ artifactory_data_dir }}:/var/opt/jfrog/artifactory
+     - {{ master_key_path }}/master.key:/var/opt/jfrog/artifactory/etc/security/master.key
+    environment:
+     - DB_TYPE=postgresql
+     - DB_USER={{ db_user }}
+     - DB_PASSWORD={{ db_password }}
+     - DB_HOST={{ db_host }}
+     - DB_PORT={{ db_port }}
+     - DB_NAME={{ db_name }}
+    restart: always

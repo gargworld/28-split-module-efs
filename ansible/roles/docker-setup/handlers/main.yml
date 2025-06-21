@@ -1,0 +1,12 @@
+- name: restart docker-compose
+  shell: |
+    if docker ps --format '{{.Names}}' | grep -qE '^(postgresql|artifactory)$'; then
+      echo "Application and postgresql DB Containers Already running. Hence Restarting them ...";
+      docker-compose down && docker-compose up -d
+    else
+      echo "Application and postgresql DB Containers not running. Starting fresh...";
+      docker-compose up -d
+    fi
+  args:
+    chdir: "{{ docker_compose_path }}"
+
