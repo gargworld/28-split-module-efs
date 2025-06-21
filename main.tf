@@ -1,32 +1,3 @@
-module "ec2" {
-  source = "./modules/ec2"
-  #private_key_file  = "secrets/pemkey.pem"
-  ami_id                    = var.ami_id
-  ec2_instance_name         = var.ec2_instance_name       # ✅ Add this
-  instance_type             = var.instance_type
-  vpc_id                    = var.vpc_id
-  subnet_id                 = var.subnet_id
-  security_group_value      = var.security_group_value         # ✅ Fix this
-  key_name                  = var.key_name
-  private_key_file          = var.private_key_file
-  ansible_user              = var.ansible_user
-#  ec2_instance_profile_name = var.ec2_instance_profile_name    # ✅ Fix this
-}
-
-
-module "eventbridge" {
-  source = "./modules/eventbridge"
-
-  codebuild_project_name     = "asg-eventbridge"
-  codebuild_service_role_arn = aws_iam_role.codebuild_role.arn
-
-  github_repo_url            = "https://github.com/gargworld/24-eventbridge-lambda-codebuild.git"
-  github_branch                = "main"
-
-  lambda_execution_role_arn  = aws_iam_role.lambda_exec.arn
-  lambda_payload_file        = "${path.module}/lambda_payload.zip"
-}
-
 ##### moved from 23- root main.tf
 
 resource "aws_vpc" "Terraform_VPC" {
@@ -149,5 +120,37 @@ resource "aws_iam_role" "lambda_exec" {
       Action = "sts:AssumeRole"
     }]
   })
+}
+
+
+module "ec2" {
+  source = "./modules/ec2"
+
+  ami_id                    = var.ami_id
+  ec2_instance_name         = var.ec2_instance_name       # ✅ Add this
+  instance_type             = var.instance_type
+
+  vpc_id                    = aws_vpc.Terraform_VPC.id
+  subnet_id                 = aws_subnet.prj-public_subnet.id
+  security_group_value      = aws_security_group.prj-security-group.id
+
+  key_name                  = var.key_name
+  private_key_file          = var.private_key_file
+
+  ansible_user              = var.ansible_user
+  ec2_instance_profile_name = var.ec2_instance_profile_name
+}
+
+module "eventbridge" {
+  source = "./modules/eventbridge"
+
+  codebuild_project_name     = "asg-eventbridge"
+  codebuild_service_role_arn = aws_iam_role.codebuild_role.arn
+
+  github_repo_url            = "https://github.com/gargworld/24-eventbridge-lambda-codebuild.git"
+  github_branch                = "main"
+
+  lambda_execution_role_arn  = aws_iam_role.lambda_exec.arn
+  lambda_payload_file        = "${path.module}/lambda_payload.zip"
 }
 

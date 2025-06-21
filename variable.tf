@@ -18,15 +18,15 @@ variable "public_cidr" {
   type        = string
 }
 
-variable "vpc_id" {
-  description = "The VPC ID in which resources will be created"
-  type        = string
-}
+#variable "vpc_id" {
+#  description = "The VPC ID in which resources will be created"
+#  type        = string
+#}
 
-variable "subnet_id" {
-  description = "Subnet ID for the EC2 instance"
-  type        = string
-}
+#variable "subnet_id" {
+#  description = "Subnet ID for the EC2 instance"
+#  type        = string
+#}
 
 variable "key_name" {
   description = "Name of the existing AWS key pair"
@@ -58,10 +58,10 @@ variable "instance_type" {
   type        = string
 }
 
-variable "security_group_value" {
-  description = "Security Group ID"
-  type        = string
-}
+#variable "security_group_value" {
+#  description = "Security Group ID"
+#  type        = string
+#}
 
 variable "ec2_instance_profile_name" {
   description = "ec2_instance_profile_name for ec2-cloudwatch-instance-profile"
