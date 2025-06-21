@@ -4,16 +4,13 @@ availability_zone    = "us-east-1a"
 vpc_cidr             = "10.0.0.0/26"
 public_cidr          = "10.0.0.0/28"
 
-#ami_id              = "ami-04b81faebe5306237" # CentOS 7.9 in us-east-1
 ami_id               = "ami-0b8c2bd77c5e270cf" # Red Hat Enterprise Linux
 
 ec2_instance_name    = "rhel96"  # or whatever you want
 instance_type        = "t2.large"
-#ec2_instance_count   = 1
 
 key_name             = "pemkey"
 private_key_file     = "pemkey.pem"
 
-#ansible_user        = "root"
 ansible_user         = "ec2-user"
 ec2_instance_profile_name = "ec2-cloudwatch-instance-profile"

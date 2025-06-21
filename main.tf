@@ -1,0 +1,153 @@
+module "ec2" {
+  source = "./modules/ec2"
+  #private_key_file  = "secrets/pemkey.pem"
+  ami_id                    = var.ami_id
+  ec2_instance_name         = var.ec2_instance_name       # ✅ Add this
+  instance_type             = var.instance_type
+  vpc_id                    = var.vpc_id
+  subnet_id                 = var.subnet_id
+  security_group_value      = var.security_group_value         # ✅ Fix this
+  key_name                  = var.key_name
+  private_key_file          = var.private_key_file
+  ansible_user              = var.ansible_user
+#  ec2_instance_profile_name = var.ec2_instance_profile_name    # ✅ Fix this
+}
+
+
+module "eventbridge" {
+  source = "./modules/eventbridge"
+
+  codebuild_project_name     = "asg-eventbridge"
+  codebuild_service_role_arn = aws_iam_role.codebuild_role.arn
+
+  github_repo_url            = "https://github.com/gargworld/24-eventbridge-lambda-codebuild.git"
+  github_branch                = "main"
+
+  lambda_execution_role_arn  = aws_iam_role.lambda_exec.arn
+  lambda_payload_file        = "${path.module}/lambda_payload.zip"
+}
+
+##### moved from 23- root main.tf
+
+resource "aws_vpc" "Terraform_VPC" {
+  cidr_block           = var.vpc_cidr
+  instance_tenancy     = "default"
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+  tags = {
+    Name = "Satyam-Pipeline-VPC"
+  }
+}
+
+resource "aws_subnet" "prj-public_subnet" {
+  cidr_block              = var.public_cidr
+  vpc_id                  = aws_vpc.Terraform_VPC.id
+  map_public_ip_on_launch = true
+  availability_zone       = var.availability_zone
+  tags = {
+    Name = "Satyam-Pipeline-Subnet"
+  }
+}
+
+resource "aws_internet_gateway" "prj-internet-gateway" {
+  vpc_id = aws_vpc.Terraform_VPC.id
+  tags = {
+    Name = "Satyam-Pipeline-Internet-Gateway"
+  }
+}
+
+resource "aws_route_table" "prj-route_table" {
+  vpc_id = aws_vpc.Terraform_VPC.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.prj-internet-gateway.id
+  }
+
+  tags = {
+    Name = "Satyam-Pipeline-Route-table"
+  }
+}
+
+resource "aws_route_table_association" "prj-route-table-association" {
+  subnet_id      = aws_subnet.prj-public_subnet.id
+  route_table_id = aws_route_table.prj-route_table.id
+}
+
+resource "aws_security_group" "prj-security-group" {
+  name   = "web"
+  vpc_id = aws_vpc.Terraform_VPC.id
+
+  ingress {
+    description = "HTTP inbound allow port 80"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTPS inbound allow port 443"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "SSH inbound allow port 22"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "inbound allow port"
+    from_port   = 8081
+    to_port     = 8081
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Allow outgoing request for everything"
+    from_port   = 0
+    to_port     = 0
+    protocol    = -1
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "Satyam-Pipeline-Security-Group"
+  }
+}
+
+resource "aws_iam_role" "codebuild_role" {
+  name = "codebuild-service-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect = "Allow",
+      Principal = {
+        Service = "codebuild.amazonaws.com"
+      },
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role" "lambda_exec" {
+  name = "lambda-execution-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect = "Allow",
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      },
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+

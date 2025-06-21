@@ -1,22 +1,22 @@
-variable "ec2_instance_name" {
-  description = "Name tag for the EC2 instance"
+variable "region_value" {
+  description = "value for the region"
   type        = string
 }
 
-variable "ami_id" {
-  description = "AMI ID for the EC2 instance"
+variable "availability_zone" {
+  description = "value for AZ"
   type        = string
 }
 
-variable "instance_type" {
-  description = "EC2 instance type"
+variable "vpc_cidr" {
+  description = "CIDR for the VPC"
   type        = string
 }
 
-#variable "ec2_instance_count" {
-#  description = "Number of EC2 instances"
-#  type        = number
-#}
+variable "public_cidr" {
+  description = "CIDR for the public subnet"
+  type        = string
+}
 
 variable "vpc_id" {
   description = "The VPC ID in which resources will be created"
@@ -25,11 +25,6 @@ variable "vpc_id" {
 
 variable "subnet_id" {
   description = "Subnet ID for the EC2 instance"
-  type        = string
-}
-
-variable "security_group_value" {
-  description = "Security Group ID for the EC2 instance"
   type        = string
 }
 
@@ -48,7 +43,28 @@ variable "ansible_user" {
   type        = string
 }
 
+variable "ami_id" {
+  description = "AMI ID for the EC2 instance"
+  type        = string
+}
+
+variable "ec2_instance_name" {
+  description = "Name tag for the EC2 instance"
+  type        = string
+}
+
+variable "instance_type" {
+  description = "Instance type for the EC2 instance"
+  type        = string
+}
+
+variable "security_group_value" {
+  description = "Security Group ID"
+  type        = string
+}
+
 variable "ec2_instance_profile_name" {
   description = "ec2_instance_profile_name for ec2-cloudwatch-instance-profile"
   type        = string
 }
+

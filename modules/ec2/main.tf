@@ -53,10 +53,6 @@ resource "aws_launch_template" "ec2_template" {
   instance_type = var.instance_type
   key_name      = aws_key_pair.key_pair.key_name
 
-#  iam_instance_profile {
-#    name = var.ec2_instance_profile_name
-#  }
-
 
    iam_instance_profile {
      name = aws_iam_instance_profile.ec2_profile.name
