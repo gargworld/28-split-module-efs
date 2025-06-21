@@ -57,9 +57,10 @@ resource "aws_codebuild_project" "terraform_apply" {
   }
 
   source {
-    type      = "GITHUB"
-    location  = var.github_repo_url
-    buildspec = "buildspec.yml"
+    type            = "GITHUB"
+    location        = var.github_repo_url
+    git_clone_depth = 1
+    buildspec       = "buildspec.yml"
   }
 }
 
