@@ -122,6 +122,7 @@ resource "aws_iam_role" "lambda_exec" {
   })
 }
 
+########### Creating Module ED2 in main.tf root
 
 module "ec2" {
   source = "./modules/ec2"
@@ -141,6 +142,8 @@ module "ec2" {
   ec2_instance_profile_name = var.ec2_instance_profile_name
 }
 
+########## Creating MOdule eventbridhe in main.tf
+
 module "eventbridge" {
   source = "./modules/eventbridge"
 
@@ -153,4 +156,3 @@ module "eventbridge" {
   lambda_execution_role_arn  = aws_iam_role.lambda_exec.arn
   lambda_payload_file        = "${path.module}/lambda_payload.zip"
 }
-

@@ -1,7 +1,7 @@
 # Example Lambda function resource
 resource "aws_lambda_function" "terraform_trigger" {
   function_name = "terraform-trigger-lambda"
-  filename      = "lambda/lambda_payload.zip"
+  filename      = "modules/eventbridge/lambda/lambda_payload.zip"
   handler       = "index.handler"
   runtime       = "python3.8"
 
@@ -39,6 +39,7 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
 }
 
 # CodeBuild project definition (simplified)
+
 resource "aws_codebuild_project" "terraform_apply" {
   name          = "terraform-apply-project"
   service_role  = var.codebuild_service_role_arn
@@ -53,14 +54,11 @@ resource "aws_codebuild_project" "terraform_apply" {
     image                       = "aws/codebuild/standard:5.0"
     type                        = "LINUX_CONTAINER"
     privileged_mode             = true
-    environment_variable {
-      name  = "TF_VERSION"
-      value = "1.2.9"
-    }
   }
 
   source {
-    type      = "CODEPIPELINE"
+    type      = "GITHUB"
+    location  = var.github_repo_url
     buildspec = "buildspec.yml"
   }
 }

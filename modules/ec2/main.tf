@@ -141,6 +141,20 @@ resource "aws_security_group" "efs_sg" {
   }
 }
 
+
+########################## creating aws_autoscaling_lifecycle_hook  ############
+
+resource "aws_autoscaling_lifecycle_hook" "terminate_hook" {
+  name                   = "terraform-instance-terminate-hook"
+  autoscaling_group_name = aws_autoscaling_group.ec2_asg.name
+  lifecycle_transition   = "autoscaling:EC2_INSTANCE_TERMINATING"
+  default_result         = "CONTINUE"
+  heartbeat_timeout      = 300
+}
+
+
+############################ EFS mount #####################
+
 resource "aws_efs_mount_target" "system_efs_mount" {
   file_system_id  = aws_efs_file_system.system_efs.id
   subnet_id       = var.subnet_id
@@ -226,4 +240,3 @@ ansible-playbook ${path.root}/ansible/site.yml \
 EOT
   }
 }
-
