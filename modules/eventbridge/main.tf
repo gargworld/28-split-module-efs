@@ -99,6 +99,7 @@ resource "aws_iam_role_policy" "codebuild_logging" {
 # -------------------------------------------------------------------
 # Package Lambda Function (ZIP)
 # -------------------------------------------------------------------
+
 resource "null_resource" "lambda_zip" {
   triggers = {
     index_py_hash = filemd5("${path.module}/lambda/index.py")
@@ -113,12 +114,12 @@ EOT
 }
 
 # -------------------------------------------------------------------
-# Lambda Function
+# Lambda Function triggered by codebuild via eventbridge
 # -------------------------------------------------------------------
 
 resource "aws_lambda_function" "terraform_trigger" {
   depends_on    = [null_resource.lambda_zip]
-  function_name = "terraform-trigger-lambda"
+  function_name = "terraform-trigger-lambda-logs"
   filename      = "${path.module}/lambda/lambda_payload.zip"
   handler       = "index.lambda_handler"
   runtime       = "python3.8"
@@ -182,10 +183,10 @@ resource "aws_iam_role_policy_attachment" "codebuild_access" {
 }
 
 # -------------------------------------------------------------------
-# CodeBuild Project "terraform_apply"
+# Main CodeBuild Project "terraform_apply"
 # -------------------------------------------------------------------
 resource "aws_codebuild_project" "terraform_apply" {
-  name          = "terraform-apply-project"
+  name          = "terraform-apply-github-project-logs"
   service_role  = aws_iam_role.codebuild_role.arn
   build_timeout = 20
 
