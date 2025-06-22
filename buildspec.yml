@@ -24,7 +24,7 @@ phases:
       - terraform init
       - echo "Import existing AWS resources to avoid duplication resource creation error in codebuild container by lambda"
       - chmod +x import-terraform-resource-state.sh
-      - ./import-terraform-resource-state.sh
+#      - ./import-terraform-resource-state.sh
       - terraform plan
 
   build:
