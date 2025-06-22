@@ -11,8 +11,8 @@ phases:
     commands:
       - echo "Installing packages ...$(date)"
       - yum install -y unzip wget jq
-      - curl -LO https://releases.hashicorp.com/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip
-      - unzip terraform_1.7.5_linux_amd64.zip
+      - curl -LO https://releases.hashicorp.com/terraform/1.8.4/terraform_1.8.4_linux_amd64.zip
+      - unzip terraform_1.8.4_linux_amd64.zip
       - mv terraform /usr/local/bin/
       - /usr/local/bin/terraform -version
       - pip install ansible
