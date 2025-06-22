@@ -44,6 +44,26 @@ resource "aws_iam_role_policy" "lambda_codebuild_trigger" {
   })
 }
 
+resource "aws_iam_role_policy" "codebuild_logging" {
+  name = "codebuild-logging"
+  role = aws_iam_role.codebuild_role.name
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource = "arn:aws:logs:*:*:*"
+      }
+    ]
+  })
+}
+
 # -------------------------------------------------------------------
 # Package Lambda Function (ZIP)
 # -------------------------------------------------------------------
@@ -143,7 +163,8 @@ resource "aws_codebuild_project" "terraform_apply" {
 
   environment {
     compute_type    = "BUILD_GENERAL1_SMALL"
-    image           = "aws/codebuild/standard:5.0"
+    #image           = "aws/codebuild/standard:5.0"
+    image           = "aws/codebuild/amazonlinux2-x86_64-standard:3.0"
     type            = "LINUX_CONTAINER"
     privileged_mode = true
   }
