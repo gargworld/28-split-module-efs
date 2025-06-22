@@ -18,16 +18,6 @@ variable "public_cidr" {
   type        = string
 }
 
-#variable "vpc_id" {
-#  description = "The VPC ID in which resources will be created"
-#  type        = string
-#}
-
-#variable "subnet_id" {
-#  description = "Subnet ID for the EC2 instance"
-#  type        = string
-#}
-
 variable "key_name" {
   description = "Name of the existing AWS key pair"
   type        = string
@@ -56,24 +46,4 @@ variable "ec2_instance_name" {
 variable "instance_type" {
   description = "Instance type for the EC2 instance"
   type        = string
-}
-
-### Varibles for Secretmanager used in eventbridge module
-
-variable "aws_access_key_id" {
-  type        = string
-  sensitive   = true
-  description = "AWS Access Key for CodeBuild"
-}
-
-variable "aws_secret_access_key" {
-  type        = string
-  sensitive   = true
-  description = "AWS Secret Access Key for CodeBuild"
-}
-
-variable "use_existing_secret" {
-  type        = bool
-  default     = true
-  description = "Use existing secret instead of creating a new one"
 }

@@ -3,9 +3,6 @@ version: 0.2
 env:
   variables:
     AWS_DEFAULT_REGION: "us-east-1"
-  secrets-manager:
-    AWS_ACCESS_KEY_ID: "codebuild/aws-credentials:AWS_ACCESS_KEY_ID"
-    AWS_SECRET_ACCESS_KEY: "codebuild/aws-credentials:AWS_SECRET_ACCESS_KEY"
 
 phases:
   install:
@@ -23,9 +20,9 @@ phases:
 
   build:
     commands:
-      - echo "Terraform apply started at $(date)"
+      - echo "Terraform apply started at" $(date)
       - terraform init
       - terraform apply -auto-approve | tee terraform_apply.log
   post_build:
     commands:
-      - echo "Terraform apply completed at $(date)"
+      - echo "Terraform apply completed at" $(date)

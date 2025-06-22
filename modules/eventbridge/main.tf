@@ -5,90 +5,25 @@ data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
-# -------------------------------------------------------------------
-# Data Sources for Secrets Manager (if using existing secret)
-# -------------------------------------------------------------------
-
-data "aws_secretsmanager_secret" "codebuild_aws_creds" {
-  count = var.use_existing_secret ? 1 : 0
-  name  = "codebuild/aws-credentials"
-}
 
 # -------------------------------------------------------------------
-# Secrets Manager Resource (only create if not using existing secret)
+# Add a full-access IAM policy for CodeBuild (before attachments)
 # -------------------------------------------------------------------
 
-resource "aws_secretsmanager_secret" "codebuild_aws_creds" {
-  count = var.use_existing_secret ? 0 : 1
-  name  = "codebuild/aws-credentials"
-}
-
-# -------------------------------------------------------------------
-# Determine which secret to use
-# -------------------------------------------------------------------
-
-locals {
-  codebuild_secret_id = try(
-    data.aws_secretsmanager_secret.codebuild_aws_creds[0].id,
-    aws_secretsmanager_secret.codebuild_aws_creds[0].id
-  )
-  codebuild_secret_arn = try(
-    data.aws_secretsmanager_secret.codebuild_aws_creds[0].arn,
-    aws_secretsmanager_secret.codebuild_aws_creds[0].arn
-  )
-}
-# -------------------------------------------------------------------
-# Secret Version (only if creating a new secret)
-# -------------------------------------------------------------------
-
-resource "aws_secretsmanager_secret_version" "codebuild_aws_creds_version" {
-  count        = var.use_existing_secret ? 0 : 1
-  #secret_id    = local.codebuild_secret_id
-  secret_id     = aws_secretsmanager_secret.codebuild_aws_creds[0].id
-  secret_string = jsonencode({
-#    AWS_ACCESS_KEY_ID     = var.aws_access_key_id,
-#    AWS_SECRET_ACCESS_KEY = var.aws_secret_access_key
-    AWS_ACCESS_KEY_ID     = var.aws_access_key_id != null ? var.aws_access_key_id : "",
-    AWS_SECRET_ACCESS_KEY = var.aws_secret_access_key != null ? var.aws_secret_access_key : ""
-  })
-}
-
-# -------------------------------------------------------------------
-# IAM Policy to Allow CodeBuild to Access Secrets
-# -------------------------------------------------------------------
-
-resource "aws_iam_policy" "codebuild_secrets_access" {
-  name = "codebuild-secretsmanager-access"
+resource "aws_iam_policy" "codebuild_admin_policy" {
+  name = "codebuild-admin-access"
 
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
       {
-        Sid    = "AllowReadCodeBuildSecrets",
         Effect = "Allow",
-        Action = [
-          "secretsmanager:GetSecretValue"
-        ],
-        Resource = local.codebuild_secret_id
+        Action = "*",
+        Resource = "*"
       }
     ]
   })
-
-  lifecycle {
-    prevent_destroy = true
-    ignore_changes  = [name]
-  }
 }
-
-# -------------------------------------------------------------------
-# Attach IAM Policy to CodeBuild Role
-# -------------------------------------------------------------------
-
-resource "aws_iam_role_policy_attachment" "attach_secrets_access_to_cb_role" {
-  role       = aws_iam_role.codebuild_role.name
-  policy_arn = aws_iam_policy.codebuild_secrets_access.arn
-}
-
 
 # -------------------------------------------------------------------
 # Lambda IAM Role
@@ -232,9 +167,20 @@ resource "aws_iam_role" "codebuild_role" {
   })
 }
 
+resource "aws_iam_role_policy_attachment" "attach_secrets_access_to_cb_role" {
+  role       = aws_iam_role.codebuild_role.name
+  policy_arn = aws_iam_policy.codebuild_admin_policy.arn
+}
+
 resource "aws_iam_role_policy_attachment" "codebuild_access" {
   role       = aws_iam_role.codebuild_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+  policy_arn = aws_iam_policy.codebuild_admin_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "codebuild_admin_attach" {
+  role       = aws_iam_role.codebuild_role.name
+  policy_arn = aws_iam_policy.codebuild_admin_policy.arn
+
 }
 
 # -------------------------------------------------------------------
@@ -256,12 +202,6 @@ resource "aws_codebuild_project" "terraform_apply" {
     type            = "LINUX_CONTAINER"
     privileged_mode = true
 
-    environment_variable {
-      name      = "AWS_CREDS"
-      type      = "SECRETS_MANAGER"
-      value = local.codebuild_secret_arn
-
-    }
   }
 
   source {

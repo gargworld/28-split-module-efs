@@ -123,8 +123,4 @@ module "eventbridge" {
 
   lambda_payload_file        = "${path.module}/lambda_payload.zip"
   codebuild_project_name     = "asg-eventbridge"
-
-  use_existing_secret    = true
-#  aws_access_key_id      = "" # not used when use_existing_secret = true
-#  aws_secret_access_key  = "" # not used when use_existing_secret = true
 }
