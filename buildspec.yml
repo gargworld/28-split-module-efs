@@ -9,7 +9,7 @@ phases:
     runtime-versions:
       python: 3.7
     commands:
-      - echo "Installing packages ...$(date)"
+      - echo "Installing packages ..." $(date)
       - yum install -y unzip wget jq
       - curl -LO https://releases.hashicorp.com/terraform/1.8.4/terraform_1.8.4_linux_amd64.zip
       - unzip terraform_1.8.4_linux_amd64.zip
@@ -20,18 +20,19 @@ phases:
 
   pre_build:
     commands:
-      - echo "Initializing Terraform with remote backend..."
+      - echo "Initializing Terraform with remote backend.tf which has current state in S3 bucket"
       - terraform init
       - echo "Import existing AWS resources to avoid duplication resource creation error in codebuild container by lambda"
       - chmod +x import-terraform-resource-state.sh
 #      - ./import-terraform-resource-state.sh
-      - terraform plan
+#      - terraform plan
 
   build:
     commands:
       - echo "Terraform apply started at" $(date)
       - terraform apply -auto-approve
-      #- terraform apply -auto-approve | tee terraform_apply.log
+      - aws ec2 describe-instances --filters "Name=tag:Name,Values=rhel96-ec2" --query "Reservations[].Instances[].State.Name"
+
   post_build:
     commands:
       - echo "Terraform apply completed at" $(date)

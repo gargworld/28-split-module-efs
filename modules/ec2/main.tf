@@ -225,6 +225,11 @@ resource "null_resource" "run_system_setup_playbook" {
     artifactory_roles_hash     = filemd5("${path.root}/ansible/roles/artifactory/tasks/main.yml")
     efs_roles_hash             = filemd5("${path.root}/ansible/roles/efs/tasks/main.yml")
     cloudwatch_roles_hash      = filemd5("${path.root}/ansible/roles/cloudwatch_agent/tasks/main.yml")
+
+    # Add a trigger to re-run when ASG is replaced
+    asg_version                = aws_launch_template.ec2_template.latest_version
+
+
   }
 
   provisioner "local-exec" {
