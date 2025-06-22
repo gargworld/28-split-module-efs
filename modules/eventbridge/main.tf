@@ -46,8 +46,10 @@ resource "aws_secretsmanager_secret_version" "codebuild_aws_creds_version" {
   #secret_id    = local.codebuild_secret_id
   secret_id     = aws_secretsmanager_secret.codebuild_aws_creds[0].id
   secret_string = jsonencode({
-    AWS_ACCESS_KEY_ID     = var.aws_access_key_id,
-    AWS_SECRET_ACCESS_KEY = var.aws_secret_access_key
+#    AWS_ACCESS_KEY_ID     = var.aws_access_key_id,
+#    AWS_SECRET_ACCESS_KEY = var.aws_secret_access_key
+    AWS_ACCESS_KEY_ID     = var.aws_access_key_id != null ? var.aws_access_key_id : "",
+    AWS_SECRET_ACCESS_KEY = var.aws_secret_access_key != null ? var.aws_secret_access_key : ""
   })
 }
 
