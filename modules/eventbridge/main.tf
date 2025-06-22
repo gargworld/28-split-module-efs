@@ -43,7 +43,8 @@ locals {
 
 resource "aws_secretsmanager_secret_version" "codebuild_aws_creds_version" {
   count        = var.use_existing_secret ? 0 : 1
-  secret_id    = local.codebuild_secret_id
+  #secret_id    = local.codebuild_secret_id
+  secret_id     = aws_secretsmanager_secret.codebuild_aws_creds[0].id
   secret_string = jsonencode({
     AWS_ACCESS_KEY_ID     = var.aws_access_key_id,
     AWS_SECRET_ACCESS_KEY = var.aws_secret_access_key
