@@ -5,6 +5,38 @@ data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
+
+# -------------------------------------------------------------------
+# Secret Manager for codebuild Credentials
+# -------------------------------------------------------------------
+
+resource "aws_secretsmanager_secret" "codebuild_aws_creds" {
+  name = "codebuild/aws-credentials"
+}
+
+resource "aws_iam_policy" "codebuild_secrets_access" {
+  name = "codebuild-secretsmanager-access"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Sid    = "AllowReadCodeBuildSecrets",
+        Effect = "Allow",
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ],
+        Resource = aws_secretsmanager_secret.codebuild_aws_creds.arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "attach_secrets_access_to_cb_role" {
+  role       = aws_iam_role.codebuild_role.name
+  policy_arn = aws_iam_policy.codebuild_secrets_access.arn
+}
+
 # -------------------------------------------------------------------
 # Lambda IAM Role
 # -------------------------------------------------------------------
@@ -163,10 +195,15 @@ resource "aws_codebuild_project" "terraform_apply" {
 
   environment {
     compute_type    = "BUILD_GENERAL1_SMALL"
-    #image           = "aws/codebuild/standard:5.0"
     image           = "aws/codebuild/amazonlinux2-x86_64-standard:3.0"
     type            = "LINUX_CONTAINER"
     privileged_mode = true
+
+    environment_variable {
+      name      = "AWS_CREDS"
+      type      = "SECRETS_MANAGER"
+      value     = aws_secretsmanager_secret.codebuild_aws_creds.arn
+    }
   }
 
   source {
