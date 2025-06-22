@@ -5,14 +5,54 @@ data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
+# -------------------------------------------------------------------
+# Data Sources for Secrets Manager (if using existing secret)
+# -------------------------------------------------------------------
+
+data "aws_secretsmanager_secret" "codebuild_aws_creds" {
+  count = var.use_existing_secret ? 1 : 0
+  name  = "codebuild/aws-credentials"
+}
 
 # -------------------------------------------------------------------
-# Secret Manager for codebuild Credentials
+# Secrets Manager Resource (only create if not using existing secret)
 # -------------------------------------------------------------------
 
 resource "aws_secretsmanager_secret" "codebuild_aws_creds" {
-  name = "codebuild/aws-credentials"
+  count = var.use_existing_secret ? 0 : 1
+  name  = "codebuild/aws-credentials"
 }
+
+# -------------------------------------------------------------------
+# Determine which secret to use
+# -------------------------------------------------------------------
+
+locals {
+  codebuild_secret_id = try(
+    data.aws_secretsmanager_secret.codebuild_aws_creds[0].id,
+    aws_secretsmanager_secret.codebuild_aws_creds[0].id
+  )
+  codebuild_secret_arn = try(
+    data.aws_secretsmanager_secret.codebuild_aws_creds[0].arn,
+    aws_secretsmanager_secret.codebuild_aws_creds[0].arn
+  )
+}
+# -------------------------------------------------------------------
+# Secret Version (only if creating a new secret)
+# -------------------------------------------------------------------
+
+resource "aws_secretsmanager_secret_version" "codebuild_aws_creds_version" {
+  count        = var.use_existing_secret ? 0 : 1
+  secret_id    = local.codebuild_secret_id
+  secret_string = jsonencode({
+    AWS_ACCESS_KEY_ID     = var.aws_access_key_id,
+    AWS_SECRET_ACCESS_KEY = var.aws_secret_access_key
+  })
+}
+
+# -------------------------------------------------------------------
+# IAM Policy to Allow CodeBuild to Access Secrets
+# -------------------------------------------------------------------
 
 resource "aws_iam_policy" "codebuild_secrets_access" {
   name = "codebuild-secretsmanager-access"
@@ -26,20 +66,31 @@ resource "aws_iam_policy" "codebuild_secrets_access" {
         Action = [
           "secretsmanager:GetSecretValue"
         ],
-        Resource = aws_secretsmanager_secret.codebuild_aws_creds.arn
+        Resource = local.codebuild_secret_id
       }
     ]
   })
+
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes  = [name]
+  }
 }
+
+# -------------------------------------------------------------------
+# Attach IAM Policy to CodeBuild Role
+# -------------------------------------------------------------------
 
 resource "aws_iam_role_policy_attachment" "attach_secrets_access_to_cb_role" {
   role       = aws_iam_role.codebuild_role.name
   policy_arn = aws_iam_policy.codebuild_secrets_access.arn
 }
 
+
 # -------------------------------------------------------------------
 # Lambda IAM Role
 # -------------------------------------------------------------------
+
 resource "aws_iam_role" "lambda_exec" {
   name = "lambda-execution-role"
 
@@ -162,6 +213,7 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
 # -------------------------------------------------------------------
 # CodeBuild IAM Role
 # -------------------------------------------------------------------
+
 resource "aws_iam_role" "codebuild_role" {
   name = "codebuild-service-role"
 
@@ -185,6 +237,7 @@ resource "aws_iam_role_policy_attachment" "codebuild_access" {
 # -------------------------------------------------------------------
 # Main CodeBuild Project "terraform_apply"
 # -------------------------------------------------------------------
+
 resource "aws_codebuild_project" "terraform_apply" {
   name          = "terraform-apply-github-project-logs"
   service_role  = aws_iam_role.codebuild_role.arn
@@ -203,7 +256,8 @@ resource "aws_codebuild_project" "terraform_apply" {
     environment_variable {
       name      = "AWS_CREDS"
       type      = "SECRETS_MANAGER"
-      value     = aws_secretsmanager_secret.codebuild_aws_creds.arn
+      value = local.codebuild_secret_arn
+
     }
   }
 

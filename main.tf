@@ -94,34 +94,6 @@ resource "aws_security_group" "prj-security-group" {
   }
 }
 
-#resource "aws_iam_role" "codebuild_role" {
-#  name = "codebuild-service-role"
-#  assume_role_policy = jsonencode({
-#    Version = "2012-10-17",
-#    Statement = [{
-#      Effect = "Allow",
-#      Principal = {
-#        Service = "codebuild.amazonaws.com"
-#      },
-#      Action = "sts:AssumeRole"
-#    }]
-#  })
-#}
-
-#resource "aws_iam_role" "lambda_exec" {
-#  name = "lambda-execution-role"
-#  assume_role_policy = jsonencode({
-#    Version = "2012-10-17",
-#    Statement = [{
-#      Effect = "Allow",
-#      Principal = {
-#        Service = "lambda.amazonaws.com"
-#      },
-#      Action = "sts:AssumeRole"
-#    }]
-#  })
-#}
-
 ########### Creating Module ec2 in main.tf root
 
 module "ec2" {
@@ -149,8 +121,11 @@ module "eventbridge" {
   github_repo_url            = "https://github.com/gargworld/24-eventbridge-lambda-codebuild.git"
   github_branch                = "main"
 
-  #lambda_execution_role_arn  = aws_iam_role.lambda_exec.arn
-  #codebuild_service_role_arn = aws_iam_role.codebuild_role.arn
   lambda_payload_file        = "${path.module}/lambda_payload.zip"
   codebuild_project_name     = "asg-eventbridge"
+
+  use_existing_secret    = true
+  aws_access_key_id      = "" # not used when use_existing_secret = true
+  aws_secret_access_key  = "" # not used when use_existing_secret = true
+
 }

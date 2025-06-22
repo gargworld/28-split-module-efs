@@ -57,3 +57,23 @@ variable "instance_type" {
   description = "Instance type for the EC2 instance"
   type        = string
 }
+
+### Varibles for Secretmanager used in eventbridge module
+
+variable "aws_access_key_id" {
+  type        = string
+  sensitive   = true
+  description = "AWS Access Key for CodeBuild"
+}
+
+variable "aws_secret_access_key" {
+  type        = string
+  sensitive   = true
+  description = "AWS Secret Access Key for CodeBuild"
+}
+
+variable "use_existing_secret" {
+  type        = bool
+  default     = true
+  description = "Use existing secret instead of creating a new one"
+}
