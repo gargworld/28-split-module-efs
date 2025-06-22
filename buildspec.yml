@@ -18,11 +18,20 @@ phases:
       - pip install ansible
       - yum update -y
 
+  pre_build:
+    commands:
+      - echo "Initializing Terraform with remote backend..."
+      - terraform init
+      - echo "Import existing AWS resources to avoid duplication resource creation error in codebuild container by lambda"
+      - chmod +x import-terraform-resource-state.sh
+      - ./import-terraform-resource-state.sh
+      - terraform plan
+
   build:
     commands:
       - echo "Terraform apply started at" $(date)
-      - terraform init
-      - terraform apply -auto-approve | tee terraform_apply.log
+      - terraform apply -auto-approve
+      #- terraform apply -auto-approve | tee terraform_apply.log
   post_build:
     commands:
       - echo "Terraform apply completed at" $(date)

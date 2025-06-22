@@ -42,6 +42,10 @@ resource "aws_iam_role" "lambda_exec" {
       Action = "sts:AssumeRole"
     }]
   })
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes  = [name]
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_basic" {
@@ -165,6 +169,10 @@ resource "aws_iam_role" "codebuild_role" {
       Action = "sts:AssumeRole"
     }]
   })
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes  = [name]
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "attach_secrets_access_to_cb_role" {
