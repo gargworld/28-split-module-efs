@@ -63,6 +63,7 @@ EOT
 # -------------------------------------------------------------------
 # Lambda Function
 # -------------------------------------------------------------------
+
 resource "aws_lambda_function" "terraform_trigger" {
   depends_on    = [null_resource.lambda_zip]
   function_name = "terraform-trigger-lambda"
@@ -78,8 +79,10 @@ resource "aws_lambda_function" "terraform_trigger" {
   }
 }
 
+# -------------------------------------------------------------------
 # EventBridge Rule & Permissions
 # -------------------------------------------------------------------
+
 resource "aws_cloudwatch_event_rule" "asg_termination_rule" {
   name        = "asg-instance-termination"
   description = "Trigger Lambda on ASG instance termination"
@@ -127,7 +130,7 @@ resource "aws_iam_role_policy_attachment" "codebuild_access" {
 }
 
 # -------------------------------------------------------------------
-# CodeBuild Project
+# CodeBuild Project "terraform_apply"
 # -------------------------------------------------------------------
 resource "aws_codebuild_project" "terraform_apply" {
   name          = "terraform-apply-project"

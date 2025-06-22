@@ -4,3 +4,4 @@
 *.log
 *.lock.hcl
 *.pem
+.terraform.tfstate.lock.info
