@@ -161,8 +161,15 @@ resource "aws_efs_mount_target" "system_efs_mount" {
   security_groups = [aws_security_group.efs_sg.id]
 }
 
+############################ Wait for SSH  #####################
+
 resource "null_resource" "wait_for_ssh" {
   depends_on = [aws_autoscaling_group.ec2_asg]
+
+  # Add a trigger to re-run when ASG is replaced
+  triggers = {
+    asg_version = aws_launch_template.ec2_template.latest_version
+  }
 
   provisioner "local-exec" {
     command = <<EOT
@@ -223,12 +230,6 @@ EOT
 resource "null_resource" "run_system_setup_playbook" {
   depends_on = [null_resource.generate_inventory]
 
-
-  # Add a trigger to re-run when ASG is replaced
-  triggers = {
-    asg_version = aws_launch_template.ec2_template.latest_version
-  }
-
   triggers = {
     site_hash                  = filemd5("${path.root}/ansible/site.yml")
     system-setup_roles_hash    = filemd5("${path.root}/ansible/roles/system-setup/tasks/main.yml")
@@ -238,7 +239,7 @@ resource "null_resource" "run_system_setup_playbook" {
     cloudwatch_roles_hash      = filemd5("${path.root}/ansible/roles/cloudwatch_agent/tasks/main.yml")
 
     # Add a trigger to re-run when ASG is replaced
-    #asg_version                = aws_launch_template.ec2_template.latest_version
+    asg_version                = aws_launch_template.ec2_template.latest_version
 
 
   }
