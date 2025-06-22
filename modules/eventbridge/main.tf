@@ -45,9 +45,26 @@ resource "aws_iam_role_policy" "lambda_codebuild_trigger" {
 }
 
 # -------------------------------------------------------------------
+# Package Lambda Function (ZIP)
+# -------------------------------------------------------------------
+resource "null_resource" "lambda_zip" {
+  triggers = {
+    index_py_hash = filemd5("${path.module}/lambda/index.py")
+  }
+
+  provisioner "local-exec" {
+    command = <<EOT
+cd ${path.module}/lambda
+zip -r lambda_payload.zip index.py
+EOT
+  }
+}
+
+# -------------------------------------------------------------------
 # Lambda Function
 # -------------------------------------------------------------------
 resource "aws_lambda_function" "terraform_trigger" {
+  depends_on    = [null_resource.lambda_zip]
   function_name = "terraform-trigger-lambda"
   filename      = "${path.module}/lambda/lambda_payload.zip"
   handler       = "index.lambda_handler"
@@ -61,7 +78,6 @@ resource "aws_lambda_function" "terraform_trigger" {
   }
 }
 
-# -------------------------------------------------------------------
 # EventBridge Rule & Permissions
 # -------------------------------------------------------------------
 resource "aws_cloudwatch_event_rule" "asg_termination_rule" {
