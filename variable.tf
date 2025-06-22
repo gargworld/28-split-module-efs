@@ -57,14 +57,3 @@ variable "instance_type" {
   description = "Instance type for the EC2 instance"
   type        = string
 }
-
-#variable "security_group_value" {
-#  description = "Security Group ID"
-#  type        = string
-#}
-
-variable "ec2_instance_profile_name" {
-  description = "ec2_instance_profile_name for ec2-cloudwatch-instance-profile"
-  type        = string
-}
-

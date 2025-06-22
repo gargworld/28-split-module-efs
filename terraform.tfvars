@@ -13,4 +13,3 @@ key_name             = "pemkey"
 private_key_file     = "pemkey.pem"
 
 ansible_user         = "ec2-user"
-ec2_instance_profile_name = "ec2-cloudwatch-instance-profile"

@@ -1,29 +1,75 @@
-# Example Lambda function resource
+# -------------------------------------------------------------------
+# Data Sources for Dynamic Region and Account ID
+# -------------------------------------------------------------------
+data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}
+
+# -------------------------------------------------------------------
+# Lambda IAM Role
+# -------------------------------------------------------------------
+resource "aws_iam_role" "lambda_exec" {
+  name = "lambda-execution-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect = "Allow",
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      },
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_basic" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy" "lambda_codebuild_trigger" {
+  name = "lambda-start-codebuild"
+  role = aws_iam_role.lambda_exec.name
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = "codebuild:StartBuild",
+        Resource = "arn:aws:codebuild:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:project/${aws_codebuild_project.terraform_apply.name}"
+      }
+    ]
+  })
+}
+
+# -------------------------------------------------------------------
+# Lambda Function
+# -------------------------------------------------------------------
 resource "aws_lambda_function" "terraform_trigger" {
   function_name = "terraform-trigger-lambda"
-  filename      = "modules/eventbridge/lambda/lambda_payload.zip"
+  filename      = "${path.module}/lambda/lambda_payload.zip"
   handler       = "index.lambda_handler"
   runtime       = "python3.8"
+  role          = aws_iam_role.lambda_exec.arn
 
-  role = var.lambda_execution_role_arn
   environment {
     variables = {
-      PROJECT_NAME = var.codebuild_project_name  # This must match the CodeBuild project name
+      PROJECT_NAME = aws_codebuild_project.terraform_apply.name
     }
   }
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_basic" {
-  role = split("/", var.lambda_execution_role_arn)[1]
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
+# -------------------------------------------------------------------
+# EventBridge Rule & Permissions
+# -------------------------------------------------------------------
 resource "aws_cloudwatch_event_rule" "asg_termination_rule" {
   name        = "asg-instance-termination"
   description = "Trigger Lambda on ASG instance termination"
   event_pattern = jsonencode({
-    "source": ["aws.autoscaling"],
-    "detail-type": ["EC2 Instance-terminate Lifecycle Action"],
+    source      = ["aws.autoscaling"],
+    "detail-type" = ["EC2 Instance-terminate Lifecycle Action"]
   })
 }
 
@@ -41,11 +87,35 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
   source_arn    = aws_cloudwatch_event_rule.asg_termination_rule.arn
 }
 
-# CodeBuild project definition (simplified)
+# -------------------------------------------------------------------
+# CodeBuild IAM Role
+# -------------------------------------------------------------------
+resource "aws_iam_role" "codebuild_role" {
+  name = "codebuild-service-role"
 
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect = "Allow",
+      Principal = {
+        Service = "codebuild.amazonaws.com"
+      },
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "codebuild_access" {
+  role       = aws_iam_role.codebuild_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+}
+
+# -------------------------------------------------------------------
+# CodeBuild Project
+# -------------------------------------------------------------------
 resource "aws_codebuild_project" "terraform_apply" {
   name          = "terraform-apply-project"
-  service_role  = var.codebuild_service_role_arn
+  service_role  = aws_iam_role.codebuild_role.arn
   build_timeout = 20
 
   artifacts {
@@ -53,10 +123,10 @@ resource "aws_codebuild_project" "terraform_apply" {
   }
 
   environment {
-    compute_type                = "BUILD_GENERAL1_SMALL"
-    image                       = "aws/codebuild/standard:5.0"
-    type                        = "LINUX_CONTAINER"
-    privileged_mode             = true
+    compute_type    = "BUILD_GENERAL1_SMALL"
+    image           = "aws/codebuild/standard:5.0"
+    type            = "LINUX_CONTAINER"
+    privileged_mode = true
   }
 
   source {
@@ -66,5 +136,3 @@ resource "aws_codebuild_project" "terraform_apply" {
     buildspec       = "buildspec.yml"
   }
 }
-
-############### Add any other necessary permissions and resources as needed
