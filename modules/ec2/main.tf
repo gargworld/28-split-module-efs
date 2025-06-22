@@ -196,6 +196,11 @@ EOT
 resource "null_resource" "generate_inventory" {
   depends_on = [null_resource.wait_for_ssh]
 
+  # Add a trigger to re-run when ASG is replaced
+  triggers = {
+    asg_version = aws_launch_template.ec2_template.latest_version
+  }
+
   provisioner "local-exec" {
     command = <<EOT
 ASG_INSTANCE_ID=$(aws autoscaling describe-auto-scaling-instances \
@@ -218,6 +223,12 @@ EOT
 resource "null_resource" "run_system_setup_playbook" {
   depends_on = [null_resource.generate_inventory]
 
+
+  # Add a trigger to re-run when ASG is replaced
+  triggers = {
+    asg_version = aws_launch_template.ec2_template.latest_version
+  }
+
   triggers = {
     site_hash                  = filemd5("${path.root}/ansible/site.yml")
     system-setup_roles_hash    = filemd5("${path.root}/ansible/roles/system-setup/tasks/main.yml")
@@ -227,7 +238,7 @@ resource "null_resource" "run_system_setup_playbook" {
     cloudwatch_roles_hash      = filemd5("${path.root}/ansible/roles/cloudwatch_agent/tasks/main.yml")
 
     # Add a trigger to re-run when ASG is replaced
-    asg_version                = aws_launch_template.ec2_template.latest_version
+    #asg_version                = aws_launch_template.ec2_template.latest_version
 
 
   }
