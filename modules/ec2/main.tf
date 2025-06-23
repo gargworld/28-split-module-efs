@@ -169,6 +169,7 @@ resource "null_resource" "wait_for_ssh" {
   # Add a trigger to re-run when ASG is replaced
   triggers = {
     asg_version = aws_launch_template.ec2_template.latest_version
+    time_now                  = timestamp()  # <- NEW: ensures it always changes due to EC2 termination
   }
 
   provisioner "local-exec" {
@@ -206,6 +207,7 @@ resource "null_resource" "generate_inventory" {
   # Add a trigger to re-run when ASG is replaced
   triggers = {
     asg_version = aws_launch_template.ec2_template.latest_version
+    time_now                  = timestamp()  # <- NEW: ensures it always changes due to EC2 termination
   }
 
   provisioner "local-exec" {
@@ -240,7 +242,7 @@ resource "null_resource" "run_system_setup_playbook" {
 
     # Add a trigger to re-run when ASG is replaced
     asg_version                = aws_launch_template.ec2_template.latest_version
-
+    time_now                  = timestamp()  # <- NEW: ensures it always changes due to EC2 termination
 
   }
 
@@ -248,6 +250,8 @@ resource "null_resource" "run_system_setup_playbook" {
     command = <<EOT
 cd ${path.root}
 chmod 600 ${path.root}/${var.private_key_file}
+set -ex
+
 
 echo "Running Ansible playbook..."
 ansible-playbook ${path.root}/ansible/site.yml \
