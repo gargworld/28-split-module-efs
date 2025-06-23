@@ -43,7 +43,7 @@ resource "aws_iam_role" "lambda_exec" {
     }]
   })
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
     ignore_changes  = [name]
   }
 }
@@ -170,7 +170,7 @@ resource "aws_iam_role" "codebuild_role" {
     }]
   })
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
     ignore_changes  = [name]
   }
 }
