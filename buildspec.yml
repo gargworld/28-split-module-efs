@@ -21,12 +21,7 @@ phases:
   pre_build:
     commands:
       - echo "Initializing Terraform with remote backend.tf which has current state in S3 bucket"
-      - terraform init -reconfigure \
-          -backend-config="bucket=your-terraform-state-bucket-704630444454" \
-          -backend-config="key=infra/terraform.tfstate" \
-          -backend-config="region=us-east-1" \
-          -backend-config="dynamodb_table=terraform-lock-table"
-
+      - terraform init
       - echo "Import existing AWS resources to avoid duplication resource creation error in codebuild container by lambda"
       - chmod +x import-terraform-resource-state.sh
 #      - ./import-terraform-resource-state.sh
