@@ -19,17 +19,17 @@ http://<AWS_PUBLIC_IP>:8081/artifactory/
 - Initial manual steps for creating Globally unique S3 bucket and DynamoDB lock table.
 ### ✅ Step 1: Create the S3 bucket (if not done already)
   ```
-  aws s3api create-bucket \
-  --bucket terraform-state-<AWS_ACCOUNT_ID> \
+  aws s3api create-bucket 
+  --bucket terraform-state-<AWS_ACCOUNT_ID> 
   --region us-east-1
   ```
 
 ### ✅ Step 2: Create the DynamoDB locking table (if needed)
 ```
-  aws dynamodb create-table \
-  --table-name terraform-lock-table \
-  --attribute-definitions AttributeName=LockID,AttributeType=S \
-  --key-schema AttributeName=LockID,KeyType=HASH \
+  aws dynamodb create-table 
+  --table-name terraform-lock-table 
+  --attribute-definitions AttributeName=LockID,AttributeType=S 
+  --key-schema AttributeName=LockID,KeyType=HASH 
   --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
 ```
 
@@ -48,8 +48,8 @@ be sure to fork this repo into your project first.
 <-- if you want to see what will be provisioned on AWS
 
 ### ✅ Step 7
-```terraform apply```\
-*be sure to type yes when prompted*
+```terraform apply```
+<-- *be sure to type yes when prompted*
 
 ### ✅ Step 8 
 When done Wait for EC2 instance and artifatory to come up fine on public ip
