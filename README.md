@@ -13,29 +13,49 @@ http://<AWS_PUBLIC_IP>:8081/artifactory/
 ### expectations
 - terraform configured
 - github configured
-- AWS configured
+- AWS CLI configured
+
+- Initial manual steps for creating Globally unique S3 bucket and DynamoDB lock table.
+- ✅ Step 1: Create the S3 bucket (if not done already)
+  aws s3api create-bucket \
+  --bucket terraform-state-<AWS_ACCOUNT_ID> \
+  --region us-east-1
+
+✅ Step 2: Create the DynamoDB locking table (if needed)
+  aws dynamodb create-table \
+  --table-name terraform-lock-table \
+  --attribute-definitions AttributeName=LockID,AttributeType=S \
+  --key-schema AttributeName=LockID,KeyType=HASH \
+  --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
+
+✅ Step 3: Update the actual values in both places
+ In **buildspec.yml and backend.tf**: update the correct S3 bucket name. 
+ No need to update anything about terraform-lock-table, because that is already there.
 
 
-### Step 1
+✅ Step 4
 ```terraform init```
 
-### Step 2
+✅ Step 5
 ```Terraform plan```
 <-- if you want to see what will be provisioned on AWS
 
-### Step 3
+✅ Step 6
 ```terraform apply```
 *be sure to type yes when prompted*
 
-### When done and want to remove the provisioned infrastructure
-```terraform destroy```
+✅ Step 7 
+When done Wait for EC2 instance and artifatory to come up fine on public ip
 
-credit:
-**originally forked from:** https://github.com/Keerthibb/Terraform-Jenkins-Ansible-Docker-CI-CD-Pipeline
+✅ Step 8 
+Then kill ec2 and let it come up also fine on new public ip.
+You can watch **github-project-logs** in cloud watch under log group
 
+**Manual commands to check:**
+aws s3 ls | grep your-terraform-state-bucket-704630444454
+aws dynamodb describe-table --table-name my-terraform-locks
 
-**Manual commands :**
-
+**docker commands**
 docker-compose -f /root/artifactory/docker-compose.yml up -d
 docker-compose down -v
 docker-compose up -d
