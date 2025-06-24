@@ -118,8 +118,9 @@ module "ec2" {
 module "eventbridge" {
   source = "./modules/eventbridge"
 
-  github_repo_url            = "https://github.com/gargworld/24-eventbridge-lambda-codebuild.git"
-  github_branch                = "main"
+  #github_repo_url            = "https://github.com/gargworld/24-eventbridge-lambda-codebuild.git"
+  github_repo_url            = var.github_repo_url
+  github_branch                = var.github_branch
 
   lambda_payload_file        = "${path.module}/lambda_payload.zip"
   codebuild_project_name     = "asg-eventbridge"

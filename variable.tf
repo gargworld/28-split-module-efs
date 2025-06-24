@@ -47,3 +47,13 @@ variable "instance_type" {
   description = "Instance type for the EC2 instance"
   type        = string
 }
+
+variable "github_repo_url" {
+  description = "my github url for project"
+  type        = string
+}
+
+variable "github_branch" {
+  description = "my github project branch"
+  type        = string
+}

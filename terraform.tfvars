@@ -13,3 +13,6 @@ key_name             = "pemkey"
 private_key_file     = "pemkey.pem"
 
 ansible_user         = "ec2-user"
+
+github_repo_url	     = "https://github.com/gargworld/24-eventbridge-lambda-codebuild.git"
+github_branch        = "main"
