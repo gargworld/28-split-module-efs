@@ -94,7 +94,7 @@ resource "aws_security_group" "prj-security-group" {
   }
 }
 
-########### Creating Module ec2 in main.tf root
+########### Creating Module ec2 + ASG in main.tf root
 
 module "ec2" {
   source = "./modules/ec2"
@@ -113,15 +113,14 @@ module "ec2" {
   ansible_user              = var.ansible_user
 }
 
-########## Creating MOdule eventbridhe in main.tf
+########## Creating Module Lambda + eventbridhe + codebuild in main.tf
 
 module "eventbridge" {
   source = "./modules/eventbridge"
 
-  #github_repo_url            = "https://github.com/gargworld/24-eventbridge-lambda-codebuild.git"
-  github_repo_url            = var.github_repo_url
-  github_branch                = var.github_branch
+  github_repo_url             = var.github_repo_url
+  github_branch               = var.github_branch
 
-  lambda_payload_file        = "${path.module}/lambda_payload.zip"
-  codebuild_project_name     = "asg-eventbridge"
+  lambda_payload_file         = "${path.module}/lambda_payload.zip"
+  codebuild_project_name      = "asg-eventbridge"
 }

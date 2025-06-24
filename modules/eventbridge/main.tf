@@ -216,6 +216,6 @@ resource "aws_codebuild_project" "terraform_apply" {
     type            = "GITHUB"
     location        = var.github_repo_url
     git_clone_depth = 1
-    buildspec       = "buildspec.yml"
+    buildspec       = "modules/eventbridge/lambda/buildspec.yml"
   }
 }
