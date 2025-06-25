@@ -112,10 +112,13 @@ EOT
 
 resource "aws_lambda_function" "terraform_trigger" {
   depends_on    = [null_resource.lambda_zip]
-  function_name = "terraform-trigger-lambda-logs"
-  filename      = var.lambda_payload_file
+  #function_name = "terraform-trigger-lambda-logs"
+  function_name = var.lambda_function_name
+  filename = "${path.module}/lambda/lambda_payload.zip"
+
+ # filename      = var.lambda_payload_file
   handler       = "index.lambda_handler"
-  runtime       = "python3.8"
+  runtime       = "python3.11"
   role          = aws_iam_role.lambda_exec.arn
 
   environment {
@@ -216,6 +219,7 @@ resource "aws_codebuild_project" "terraform_apply" {
     type            = "GITHUB"
     location        = var.github_repo_url
     git_clone_depth = 1
-    buildspec       = "modules/lambda/lambda/buildspec.yml"
+    #buildspec       = "modules/lambda/lambda/buildspec.yml"
+    buildspec       = "lambda/buildspec.yml"
   }
 }
