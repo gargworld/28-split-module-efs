@@ -57,14 +57,13 @@
     src: docker-compose.yml.j2
     dest: "{{ docker_compose_path }}/docker-compose.yml"
 
-- name: Copy .env file
-  copy:
-    src: .env
-    dest: "{{ docker_compose_path }}/.env"
-    owner: 1030
-    group: 1030
-    mode: '0644'
-#  notify: restart docker-compose
+#- name: Copy .env template
+#  template:
+#    src: .env.j2
+#    dest: "{{ docker_compose_path }}/.env"
+#    owner: 1030
+#    group: 1030
+#    mode: '0644'
 
 - name: restart docker-compose
   shell: |

@@ -1,5 +1,3 @@
-##### moved from 23- root main.tf
-
 resource "aws_vpc" "Terraform_VPC" {
   cidr_block           = var.vpc_cidr
   instance_tenancy     = "default"
@@ -92,35 +90,4 @@ resource "aws_security_group" "prj-security-group" {
   tags = {
     Name = "Satyam-Pipeline-Security-Group"
   }
-}
-
-########### Creating Module ec2 + ASG in main.tf root
-
-module "ec2" {
-  source = "./modules/ec2"
-
-  ami_id                    = var.ami_id
-  ec2_instance_name         = var.ec2_instance_name       # ✅ Add this
-  instance_type             = var.instance_type
-
-  vpc_id                    = aws_vpc.Terraform_VPC.id
-  subnet_id                 = aws_subnet.prj-public_subnet.id
-  security_group_value      = aws_security_group.prj-security-group.id
-
-  key_name                  = var.key_name
-  private_key_file          = var.private_key_file
-
-  ansible_user              = var.ansible_user
-}
-
-########## Creating Module Lambda + eventbridhe + codebuild in main.tf
-
-module "eventbridge" {
-  source = "./modules/eventbridge"
-
-  github_repo_url             = var.github_repo_url
-  github_branch               = var.github_branch
-
-  lambda_payload_file         = "${path.module}/lambda_payload.zip"
-  codebuild_project_name      = "asg-eventbridge"
 }

@@ -17,7 +17,7 @@ resource "aws_key_pair" "key_pair" {
 # Save private key locally (optional)
 resource "local_file" "private_key" {
   content              = tls_private_key.rsa_4096.private_key_pem
-  filename             = var.private_key_file
+  filename             = "pemkey.pem"
   file_permission      = "0600"
   directory_permission = "0700"
 }

@@ -5,3 +5,7 @@
 *.lock.hcl
 *.pem
 .terraform.tfstate.lock.info
+.terragrunt-cache/
+*.tfstate
+*.backup
+*.terraform.lock.hcl

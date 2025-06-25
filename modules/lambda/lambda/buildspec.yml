@@ -1,0 +1,43 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_DEFAULT_REGION: "us-east-1"
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - echo "Installing general packages ... $(date)"
+      - yum install -y unzip wget jq
+
+      - echo "Installing Terraform & Terragrunt and Ansible ..."
+      - curl -LO https://releases.hashicorp.com/terraform/1.8.4/terraform_1.8.4_linux_amd64.zip
+      - unzip terraform_1.8.4_linux_amd64.zip && mv terraform /usr/local/bin/
+      - terraform -version
+
+      - curl -L -o /usr/local/bin/terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/v0.56.3/terragrunt_linux_amd64
+      - chmod +x /usr/local/bin/terragrunt
+      - /usr/local/bin/terragrunt -version
+
+      - pip install ansible
+      - yum update -y
+
+  pre_build:
+    commands:
+      - echo "Setting up for Terragrunt apply... $(date)"
+      - echo "Current dir: $(pwd)"  # for debug
+      - ls -la                     # to verify content
+      - /usr/local/bin/terragrunt run-all init
+
+  build:
+    commands:
+      - echo "Running terragrunt run-all apply from repo root at $(date)"
+      - /usr/local/bin/terragrunt run-all apply -auto-approve
+      - aws ec2 describe-instances --filters "Name=tag:Name,Values=rhel96" --query "Reservations[].Instances[].State.Name"
+
+  post_build:
+    commands:
+      - echo "Terragrunt apply completed at $(date)"
+
