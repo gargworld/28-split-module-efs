@@ -42,3 +42,14 @@ variable "ansible_user" {
   description = "Username for Ansible SSH connections"
   type        = string
 }
+
+variable "ansible_repo_url" {
+  type    = string
+  default = "https://github.com/gargworld/27-ansible-infra-roles.git"
+}
+
+
+variable "ansible_tmp_dir" {
+  type    = string
+  default = "/tmp/ansible-infra-roles
+}
