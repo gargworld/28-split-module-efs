@@ -10,11 +10,6 @@ variable "lambda_function_name" {
   type        = string
 }
 
-#variable "lambda_payload_file" {
-#  description = "Path to Lambda zip file"
-#  type        = string
-#}
-
 variable "github_repo_url" {
   description = "GitHub repository for CodeBuild"
   type        = string

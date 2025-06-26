@@ -20,15 +20,12 @@ phases:
       - curl -L -o /usr/local/bin/terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/v0.56.3/terragrunt_linux_amd64
       - chmod +x /usr/local/bin/terragrunt
       - /usr/local/bin/terragrunt -version
-
       - pip install ansible
       - yum update -y
 
   pre_build:
     commands:
       - echo "Setting up for Terragrunt apply... $(date)"
-      - echo "Current dir: $(pwd)"  # for debug
-      - ls -la                     # to verify content
       - /usr/local/bin/terragrunt run-all init
 
   build:
