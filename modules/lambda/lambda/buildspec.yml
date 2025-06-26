@@ -7,7 +7,7 @@ env:
 phases:
   install:
     runtime-versions:
-      python: 3.11
+      python: 3.9
     commands:
       - echo "Installing general packages ... $(date)"
       - yum install -y unzip wget jq
