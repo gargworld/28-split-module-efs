@@ -20,7 +20,7 @@ http://<AWS_PUBLIC_IP>:8081/artifactory/
 ### ✅ Step 1: Create the S3 bucket (if not done already)
   ```
   aws s3api create-bucket 
-  --bucket terraform-state-<AWS_ACCOUNT_ID> 
+  --bucket terraform-state-bucket-<AWS_ACCOUNT_ID> 
   --region us-east-1
   ```
 
