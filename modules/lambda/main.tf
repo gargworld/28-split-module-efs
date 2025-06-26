@@ -112,11 +112,9 @@ EOT
 
 resource "aws_lambda_function" "terraform_trigger" {
   depends_on    = [null_resource.lambda_zip]
-  #function_name = "terraform-trigger-lambda-logs"
   function_name = var.lambda_function_name
   filename = "${path.module}/lambda/lambda_payload.zip"
 
- # filename      = var.lambda_payload_file
   handler       = "index.lambda_handler"
   runtime       = "python3.11"
   role          = aws_iam_role.lambda_exec.arn

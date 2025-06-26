@@ -13,8 +13,5 @@ inputs = {
 
   codebuild_project_name = "terraform-apply"
   lambda_function_name   = "asg_termination_rule"
-  #lambda_payload_file    = "${get_terragrunt_dir()}/modules/lambda/lambda_payload.zip"
-
-  # ... other inputs
 }
 
