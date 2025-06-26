@@ -8,7 +8,7 @@ terraform {
 }
 
 inputs = {
-  github_repo_url      = "https://github.com/gargworld/24-eventbridge-lambda-codebuild.git"
+  github_repo_url      = "https://github.com/gargworld/25-tg-lambda-codebuild.git"
   github_branch        = "main"
 
   codebuild_project_name = "terraform-apply"
