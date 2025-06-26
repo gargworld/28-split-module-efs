@@ -1,4 +1,3 @@
-# ./ec2/terragrunt.hcl
 include {
   path = find_in_parent_folders()
 }
@@ -23,7 +22,6 @@ inputs = {
   instance_type        = "t2.large"
 
   key_name             = "pemkey"
-  #private_key_file     = "${path.root}/../../secrets/${var.private_key_file}" # this is how you define in terraform
   private_key_file     = "${get_path_to_repo_root()}/secrets/${local.private_key_file}" # This is how you define in terragrunt
 
   ansible_user         = "ec2-user"

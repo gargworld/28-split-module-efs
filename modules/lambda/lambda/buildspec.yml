@@ -34,8 +34,7 @@ phases:
   build:
     commands:
       - echo "Running terragrunt run-all apply from repo root at $(date)"
-      - /usr/local/bin/terragrunt run-all apply -auto-approve
-      - aws ec2 describe-instances --filters "Name=tag:Name,Values=rhel96" --query "Reservations[].Instances[].State.Name"
+      - /usr/local/bin/terragrunt run-all apply --auto-approve --terragrunt-non-interactive
 
   post_build:
     commands:
