@@ -161,7 +161,7 @@ resource "aws_efs_mount_target" "system_efs_mount" {
   security_groups = [aws_security_group.efs_sg.id]
 }
 
-############################ Wait for SSH  #####################
+############################ Wait for SSH null_resource #####################
 
 resource "null_resource" "wait_for_ssh" {
   depends_on = [aws_autoscaling_group.ec2_asg]
@@ -184,7 +184,7 @@ IP=$(aws ec2 describe-instances \
   --output text)
 
 ATTEMPT=1
-MAX_ATTEMPTS=10
+MAX_ATTEMPTS=5
 
 while ! ssh -i ./${var.private_key_file} -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${var.ansible_user}@$IP 'exit' 2>/dev/null; do
   echo "[$ATTEMPT/$MAX_ATTEMPTS] Waiting for SSH on $IP..."
@@ -201,13 +201,15 @@ EOT
   }
 }
 
+############################ Generate Inventory null_resource #####################
+
 resource "null_resource" "generate_inventory" {
   depends_on = [null_resource.wait_for_ssh]
 
   # Add a trigger to re-run when ASG is replaced
   triggers = {
     asg_version = aws_launch_template.ec2_template.latest_version
-    time_now                  = timestamp()  # <- NEW: ensures it always changes due to EC2 termination
+    time_now  = timestamp()  # <- NEW: ensures it always changes due to EC2 termination
   }
 
   provisioner "local-exec" {
@@ -221,25 +223,19 @@ IP=$(aws ec2 describe-instances \
   --query "Reservations[0].Instances[0].PublicIpAddress" \
   --output text)
 
-mkdir -p ansible/inventory
-HOST_ENTRY="$IP ansible_user=${var.ansible_user} ansible_ssh_private_key_file=./${var.private_key_file}"
-echo "[system]" > ansible/inventory/hosts
-echo "$HOST_ENTRY" >> ansible/inventory/hosts
+mkdir -p $(ansible_tmp_dir)/inventory
+echo "[system]" > $(ansible_tmp_dir)/inventory/hosts
+echo "$IP ansible_user=${var.ansible_user} ansible_ssh_private_key_file=${path.root}/${var.private_key_file}" >> $(ansible_tmp_dir)/inventory/hosts
 EOT
   }
 }
+
+############################ "run_system_setup_playbook" null_resource #####################
 
 resource "null_resource" "run_system_setup_playbook" {
   depends_on = [null_resource.generate_inventory]
 
   triggers = {
-    site_hash                  = filemd5("${path.root}/ansible/site.yml")
-    system-setup_roles_hash    = filemd5("${path.root}/ansible/roles/system-setup/tasks/main.yml")
-    docker-setup_roles_hash    = filemd5("${path.root}/ansible/roles/docker-setup/tasks/main.yml")
-    artifactory_roles_hash     = filemd5("${path.root}/ansible/roles/artifactory/tasks/main.yml")
-    efs_roles_hash             = filemd5("${path.root}/ansible/roles/efs/tasks/main.yml")
-    cloudwatch_roles_hash      = filemd5("${path.root}/ansible/roles/cloudwatch_agent/tasks/main.yml")
-
     # Add a trigger to re-run when ASG is replaced
     asg_version                = aws_launch_template.ec2_template.latest_version
     time_now                  = timestamp()  # <- NEW: ensures it always changes due to EC2 termination
@@ -248,14 +244,18 @@ resource "null_resource" "run_system_setup_playbook" {
 
   provisioner "local-exec" {
     command = <<EOT
-cd ${path.root}
-chmod 600 ${path.root}/${var.private_key_file}
 set -ex
+cd /tmp
+rm -rf $(ansible_tmp_dir)
+git clone ${var.ansible_repo_url} $(ansible_tmp_dir)
 
+chmod 600 ${path.root}/${var.private_key_file}
+
+cd $(ansible_tmp_dir)
 
 echo "Running Ansible playbook..."
-ansible-playbook ${path.root}/ansible/site.yml \
-  -i ${path.root}/ansible/inventory/hosts \
+ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook site.yml \
+  -i inventory/hosts \
   --extra-vars "efs_dns_name=${aws_efs_file_system.system_efs.dns_name}" \
   --ssh-extra-args='-o StrictHostKeyChecking=no -o ConnectTimeout=5'
 EOT
