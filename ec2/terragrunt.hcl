@@ -24,9 +24,13 @@ inputs = {
   key_name             = "pemkey"
   private_key_file     = "${get_path_to_repo_root()}/secrets/${local.private_key_file}" # This is how you define in terragrunt
 
-  ansible_user         = "ec2-user"
-
   vpc_id               = dependency.network.outputs.vpc_id
   subnet_id            = dependency.network.outputs.subnet_id
   security_group_value = dependency.network.outputs.security_group_id
+  
+  ansible_user         = "ec2-user"
+  ansible_repo_url     = "https://github.com/gargworld/27-ansible-infra-roles.git" 
+  ansible_tmp_dir      = "/tmp/ansible-infra-roles" 
+
+
 }

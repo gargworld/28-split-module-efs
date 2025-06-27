@@ -169,7 +169,7 @@ resource "null_resource" "wait_for_ssh" {
   # Add a trigger to re-run when ASG is replaced
   triggers = {
     asg_version = aws_launch_template.ec2_template.latest_version
-    time_now                  = timestamp()  # <- NEW: ensures it always changes due to EC2 termination
+    time_now    = timestamp()  # <- NEW: ensures it always changes due to EC2 termination
   }
 
   provisioner "local-exec" {
@@ -206,26 +206,57 @@ EOT
 resource "null_resource" "generate_inventory" {
   depends_on = [null_resource.wait_for_ssh]
 
-  # Add a trigger to re-run when ASG is replaced
   triggers = {
     asg_version = aws_launch_template.ec2_template.latest_version
-    time_now  = timestamp()  # <- NEW: ensures it always changes due to EC2 termination
+    time_now    = timestamp()
   }
 
   provisioner "local-exec" {
     command = <<EOT
-ASG_INSTANCE_ID=$(aws autoscaling describe-auto-scaling-instances \
-  --query "AutoScalingInstances[?AutoScalingGroupName=='${var.ec2_instance_name}-asg'].InstanceId" \
-  --output text)
+#!/bin/bash
+set -e
+
+echo "[INFO] Finding instance in ASG: ${var.ec2_instance_name}-asg"
+
+ATTEMPT=1
+MAX_ATTEMPTS=10
+ASG_INSTANCE_ID=""
+
+while [ -z "$ASG_INSTANCE_ID" ] && [ "$ATTEMPT" -le "$MAX_ATTEMPTS" ]; do
+  ASG_INSTANCE_ID=$(aws autoscaling describe-auto-scaling-instances \
+    --region ${var.aws_region} \
+    --query "AutoScalingInstances[?AutoScalingGroupName=='${var.ec2_instance_name}-asg'].InstanceId" \
+    --output text)
+
+  if [ -z "$ASG_INSTANCE_ID" ]; then
+    echo "[$ATTEMPT/$MAX_ATTEMPTS] Waiting for ASG instance to be available..."
+    ATTEMPT=$((ATTEMPT+1))
+    sleep 5
+  fi
+done
+
+if [ -z "$ASG_INSTANCE_ID" ]; then
+  echo "ERROR: Instance not found in ASG!"
+  exit 1
+fi
+
+echo "[INFO] ASG Instance ID: $ASG_INSTANCE_ID"
 
 IP=$(aws ec2 describe-instances \
   --instance-ids $ASG_INSTANCE_ID \
+  --region ${var.aws_region} \
   --query "Reservations[0].Instances[0].PublicIpAddress" \
   --output text)
 
-mkdir -p $(ansible_tmp_dir)/inventory
-echo "[system]" > $(ansible_tmp_dir)/inventory/hosts
+echo "[INFO] Public IP: $IP"
+
+# Create Ansible inventory
+mkdir -p $var.(ansible_tmp_dir)/inventory
+echo "[system]" > $(var.ansible_tmp_dir)/inventory/hosts
 echo "$IP ansible_user=${var.ansible_user} ansible_ssh_private_key_file=${path.root}/${var.private_key_file}" >> $(ansible_tmp_dir)/inventory/hosts
+
+echo "[INFO] Inventory written to $(var.ansible_tmp_dir)/inventory/hosts"
+cat $(var.ansible_tmp_dir)/inventory/hosts
 EOT
   }
 }
@@ -237,21 +268,21 @@ resource "null_resource" "run_system_setup_playbook" {
 
   triggers = {
     # Add a trigger to re-run when ASG is replaced
-    asg_version                = aws_launch_template.ec2_template.latest_version
-    time_now                  = timestamp()  # <- NEW: ensures it always changes due to EC2 termination
+    asg_version = aws_launch_template.ec2_template.latest_version
+    time_now    = timestamp()  # <- NEW: ensures it always changes due to EC2 termination
 
   }
 
   provisioner "local-exec" {
     command = <<EOT
 set -ex
-cd /tmp
-rm -rf $(ansible_tmp_dir)
-git clone ${var.ansible_repo_url} $(ansible_tmp_dir)
+#cd /tmp
+rm -rf $(var.ansible_tmp_dir)
+git clone ${var.ansible_repo_url} $(var.ansible_tmp_dir)
 
-chmod 600 ${path.root}/${var.private_key_file}
+chmod 600 ${var.private_key_file}
 
-cd $(ansible_tmp_dir)
+cd $(var.ansible_tmp_dir)
 
 echo "Running Ansible playbook..."
 ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook site.yml \
