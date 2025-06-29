@@ -13,6 +13,11 @@ variable "ec2_instance_name" {
   type        = string
 }
 
+variable "aws_region" {
+  description = "AWS region to operate in"
+  type        = string
+}
+
 variable "vpc_id" {
   description = "The VPC ID in which resources will be created"
   type        = string
@@ -38,16 +43,16 @@ variable "private_key_file" {
   type        = string
 }
 
+variable "private_key_source" {
+  description = "Path to the source private key file in the repo"
+  type        = string
+}
+
 variable "ansible_user" {
   description = "Username for Ansible SSH connections"
   type        = string
 }
 
 variable "ansible_repo_url" {
-  type    = string
-}
-
-
-variable "ansible_tmp_dir" {
   type    = string
 }

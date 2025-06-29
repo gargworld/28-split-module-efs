@@ -14,7 +14,7 @@ resource "aws_key_pair" "key_pair" {
   public_key = tls_private_key.rsa_4096.public_key_openssh
 }
 
-# Save private key locally (optional)
+# Save private key locally on EC2 or your VM from where you can login to EC2 to check (optional)
 resource "local_file" "private_key" {
   content              = tls_private_key.rsa_4096.private_key_pem
   filename             = var.private_key_file
@@ -22,7 +22,7 @@ resource "local_file" "private_key" {
   directory_permission = "0700"
 }
 
-################## iam cloudwatch role
+################## iam cloudwatch role ##################################
 
 resource "aws_iam_role" "ec2_cloudwatch_role" {
   name = "ec2-cloudwatch-role"
@@ -83,7 +83,7 @@ resource "aws_launch_template" "ec2_template" {
   }
 }
 
-########### Auto Scaling Group   #############################
+####################### Auto Scaling Group   #############################
 
 resource "aws_autoscaling_group" "ec2_asg" {
   name                      = "${var.ec2_instance_name}-asg"
@@ -142,7 +142,7 @@ resource "aws_security_group" "efs_sg" {
 }
 
 
-########################## creating aws_autoscaling_lifecycle_hook  ############
+#################### creating aws_autoscaling_lifecycle_hook  ############
 
 resource "aws_autoscaling_lifecycle_hook" "terminate_hook" {
   name                   = "terraform-instance-terminate-hook"
@@ -153,7 +153,7 @@ resource "aws_autoscaling_lifecycle_hook" "terminate_hook" {
 }
 
 
-############################ EFS mount #####################
+############################ EFS mount ##################################
 
 resource "aws_efs_mount_target" "system_efs_mount" {
   file_system_id  = aws_efs_file_system.system_efs.id
@@ -161,7 +161,7 @@ resource "aws_efs_mount_target" "system_efs_mount" {
   security_groups = [aws_security_group.efs_sg.id]
 }
 
-############################ Wait for SSH null_resource #####################
+############################ Wait for SSH null_resource ##################### NO1
 
 resource "null_resource" "wait_for_ssh" {
   depends_on = [aws_autoscaling_group.ec2_asg]
@@ -179,21 +179,25 @@ ASG_INSTANCE_ID=$(aws autoscaling describe-auto-scaling-instances \
   --output text)
 
 IP=$(aws ec2 describe-instances \
+  --region ${var.aws_region} \
   --instance-ids $ASG_INSTANCE_ID \
   --query "Reservations[0].Instances[0].PublicIpAddress" \
   --output text)
 
+echo "[INFO] Sleeping 10 seconds to allow SSH service to start..."
+sleep 10
+
 ATTEMPT=1
 MAX_ATTEMPTS=5
-
-while ! ssh -i ./${var.private_key_file} -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${var.ansible_user}@$IP 'exit' 2>/dev/null; do
-  echo "[$ATTEMPT/$MAX_ATTEMPTS] Waiting for SSH on $IP..."
+echo "trying SSSSSSSSSSSSSSSH"
+while ! ssh -vv -i ${var.private_key_file} -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${var.ansible_user}@$IP 'exit'; do
+  echo "[$ATTEMPT/$MAX_ATTEMPTS] Waiting for SSSSSSSSSSSSSSSSSSSSH on $IP..."
   if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
     echo "ERROR: Timed out waiting for SSH."
     exit 1
   fi
   ATTEMPT=$((ATTEMPT+1))
-  sleep 5
+  sleep 5 
 done
 
 echo "[INFO] SSH is now available on $IP"
@@ -201,7 +205,7 @@ EOT
   }
 }
 
-############################ Generate Inventory null_resource #####################
+############################ Generate Inventory null_resource ##################### NO2
 
 resource "null_resource" "generate_inventory" {
   depends_on = [null_resource.wait_for_ssh]
@@ -213,7 +217,6 @@ resource "null_resource" "generate_inventory" {
 
   provisioner "local-exec" {
     command = <<EOT
-#!/bin/bash
 set -e
 
 echo "[INFO] Finding instance in ASG: ${var.ec2_instance_name}-asg"
@@ -236,7 +239,7 @@ while [ -z "$ASG_INSTANCE_ID" ] && [ "$ATTEMPT" -le "$MAX_ATTEMPTS" ]; do
 done
 
 if [ -z "$ASG_INSTANCE_ID" ]; then
-  echo "ERROR: Instance not found in ASG!"
+  echo "ERROR: Instance not found in ASG"
   exit 1
 fi
 
@@ -250,18 +253,26 @@ IP=$(aws ec2 describe-instances \
 
 echo "[INFO] Public IP: $IP"
 
-# Create Ansible inventory
-mkdir -p $var.(ansible_tmp_dir)/inventory
-echo "[system]" > $(var.ansible_tmp_dir)/inventory/hosts
-echo "$IP ansible_user=${var.ansible_user} ansible_ssh_private_key_file=${path.root}/${var.private_key_file}" >> $(ansible_tmp_dir)/inventory/hosts
+echo  "Create Ansible inventory"
+mkdir -p /tmp/inventory
 
-echo "[INFO] Inventory written to $(var.ansible_tmp_dir)/inventory/hosts"
-cat $(var.ansible_tmp_dir)/inventory/hosts
+sleep 10
+
+HOST_ENTRY="$IP ansible_user=${var.ansible_user} ansible_ssh_private_key_file=${var.private_key_file}"
+echo "$HOST_ENTRY" > /tmp/inventory/hosts
+
+echo "[INFO] Inventory written to /tmp/inventory/hosts"
+echo `hostname`
+cat /tmp/inventory/hosts
+
+sleep 10
+
 EOT
   }
 }
 
-############################ "run_system_setup_playbook" null_resource #####################
+
+############################ "run_system_setup_playbook" null_resource ##################### NO3
 
 resource "null_resource" "run_system_setup_playbook" {
   depends_on = [null_resource.generate_inventory]
@@ -273,20 +284,28 @@ resource "null_resource" "run_system_setup_playbook" {
 
   }
 
-  provisioner "local-exec" {
-    command = <<EOT
+provisioner "local-exec" {
+command = <<EOT
+
 set -ex
-#cd /tmp
-rm -rf $(var.ansible_tmp_dir)
-git clone ${var.ansible_repo_url} $(var.ansible_tmp_dir)
 
-chmod 600 ${var.private_key_file}
+echo "[INFO] Cleaning previous clone"
+rm -rf /tmp/ansible-infra-roles
 
-cd $(var.ansible_tmp_dir)
+echo "[INFO] Cloning Ansible repo"
+git clone ${var.ansible_repo_url} /tmp/ansible-infra-roles
+cd /tmp/ansible-infra-roles
+
+# Copy private key to /tmp
+#cp ${var.private_key_source} ${var.private_key_file}
+
+#echo "[INFO] Setting permissions for private key"
+#chmod 600 ${var.private_key_file}
+
 
 echo "Running Ansible playbook..."
 ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook site.yml \
-  -i inventory/hosts \
+  -i /tmp/inventory/hosts \
   --extra-vars "efs_dns_name=${aws_efs_file_system.system_efs.dns_name}" \
   --ssh-extra-args='-o StrictHostKeyChecking=no -o ConnectTimeout=5'
 EOT
