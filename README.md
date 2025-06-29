@@ -8,7 +8,7 @@ Final outcome of this pipeline is as follows:
 4) Default Artifactory id/password as admin/password
 5) Below are some commonly used frequently used troubleshooting commands which you can use.
 
-http://<AWS_PUBLIC_IP>:8081/artifactory/
+http://<AWS_PUBLIC_IP>:8081/artifactory
 
 ## To run this project on your side
 ### expectations
