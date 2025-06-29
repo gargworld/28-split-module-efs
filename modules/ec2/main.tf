@@ -47,7 +47,6 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 ######################### Launch Template ##################################
 
 resource "aws_launch_template" "ec2_template" {
-  #name_prefix   = "prj-template-"
   name_prefix   = "${var.ec2_instance_name}-lt-"
   image_id      = var.ami_id
   instance_type = var.instance_type
@@ -58,11 +57,18 @@ resource "aws_launch_template" "ec2_template" {
      name = aws_iam_instance_profile.ec2_profile.name
    }
 
+  vpc_security_group_ids = [var.security_group_value]
+
+#  network_interfaces {
+#    associate_public_ip_address = true
+#    subnet_id                   = var.subnet_id
+#    security_groups             = [var.security_group_value]
+#  }
 
   network_interfaces {
     associate_public_ip_address = true
-    subnet_id                   = var.subnet_id
-    security_groups             = [var.security_group_value]
+    delete_on_termination       = true
+    device_index                = 0
   }
 
   user_data = base64encode(<<-EOF
@@ -174,9 +180,33 @@ resource "null_resource" "wait_for_ssh" {
 
   provisioner "local-exec" {
     command = <<EOT
-ASG_INSTANCE_ID=$(aws autoscaling describe-auto-scaling-instances \
-  --query "AutoScalingInstances[?AutoScalingGroupName=='${var.ec2_instance_name}-asg'].InstanceId" \
-  --output text)
+
+echo "[INFO] Finding instance in ASG: ${var.ec2_instance_name}-asg"
+
+ATTEMPT=1
+MAX_ATTEMPTS=10
+ASG_INSTANCE_ID=""
+
+while [ -z "$ASG_INSTANCE_ID" ] && [ "$ATTEMPT" -le "$MAX_ATTEMPTS" ]; do
+  ASG_INSTANCE_ID=$(aws autoscaling describe-auto-scaling-instances \
+    --region ${var.aws_region} \
+    --query "AutoScalingInstances[?AutoScalingGroupName=='${var.ec2_instance_name}-asg'].InstanceId" \
+    --output text)
+
+  if [ -z "$ASG_INSTANCE_ID" ]; then
+    echo "[$ATTEMPT/$MAX_ATTEMPTS] Waiting for ASG instance ID..."
+    ATTEMPT=$((ATTEMPT+1))
+    sleep 5
+  fi
+done
+
+if [ -z "$ASG_INSTANCE_ID" ]; then
+  echo "ERROR: No instance found in ASG."
+  exit 1
+fi
+
+echo "[INFO] Found instance ID: $ASG_INSTANCE_ID"
+
 
 IP=$(aws ec2 describe-instances \
   --region ${var.aws_region} \
@@ -184,14 +214,39 @@ IP=$(aws ec2 describe-instances \
   --query "Reservations[0].Instances[0].PublicIpAddress" \
   --output text)
 
-echo "[INFO] Sleeping 10 seconds to allow SSH service to start..."
-sleep 10
+
+# Now get the public IP
+IP=""
+ATTEMPT=1
+while [ -z "$IP" ] && [ "$ATTEMPT" -le "$MAX_ATTEMPTS" ]; do
+  IP=$(aws ec2 describe-instances \
+    --region ${var.aws_region} \
+    --instance-ids $ASG_INSTANCE_ID \
+    --query "Reservations[0].Instances[0].PublicIpAddress" \
+    --output text)
+
+  if [ "$IP" == "None" ] || [ -z "$IP" ]; then
+    echo "[$ATTEMPT/$MAX_ATTEMPTS] Waiting for instance IP..."
+    IP=""
+    ATTEMPT=$((ATTEMPT+1))
+    sleep 5
+  fi
+done
+
+if [ -z "$IP" ]; then
+  echo "ERROR: Instance has no public IP."
+  exit 1
+fi
+
+echo "[INFO] SSH target IP: $IP"
+
+echo "Wait for SSH to be available"
 
 ATTEMPT=1
 MAX_ATTEMPTS=5
-echo "trying SSSSSSSSSSSSSSSH"
-while ! ssh -vv -i ${var.private_key_file} -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${var.ansible_user}@$IP 'exit'; do
-  echo "[$ATTEMPT/$MAX_ATTEMPTS] Waiting for SSSSSSSSSSSSSSSSSSSSH on $IP..."
+echo "trying SSH"
+while ! ssh -i ${var.private_key_file} -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${var.ansible_user}@$IP 'exit'; do
+  echo "[$ATTEMPT/$MAX_ATTEMPTS] Waiting for SSH on $IP..."
   if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
     echo "ERROR: Timed out waiting for SSH."
     exit 1
