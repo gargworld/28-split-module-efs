@@ -13,6 +13,10 @@ dependency "network" {
   config_path = "../network"
 }
 
+dependency "efs" {
+  config_path = "../efs"
+}
+
 terraform {
   source = "../modules/ec2"
 }
@@ -23,7 +27,6 @@ inputs = {
   instance_type        = "t2.large"
 
   key_name             = "pemkey"
-#  private_key_file     = "${get_path_to_repo_root()}/secrets/${local.private_key_file}" # This is how you define in terragrunt
   private_key_file     = local.private_key_dest_path
   private_key_source   = local.private_key_source_path
 
@@ -35,5 +38,6 @@ inputs = {
   ansible_user         = "ec2-user"
   ansible_repo_url     = "https://github.com/gargworld/27-ansible-infra-roles.git" 
   ansible_tmp_dir      = "/tmp/ansible-infra-roles"
-
+ 
+  efs_dns_name = dependency.efs.outputs.efs_dns_name
 }

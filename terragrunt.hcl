@@ -9,7 +9,7 @@ remote_state {
     bucket         = "terraform-state-bucket-704630444454"
     key            = "${path_relative_to_include()}/terraform.tfstate"
     region         = local.region
-
+    encrypt        = true
     dynamodb_table = "terragrunt-locks"
   }
 }
