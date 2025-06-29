@@ -56,3 +56,9 @@ variable "ansible_user" {
 variable "ansible_repo_url" {
   type    = string
 }
+
+variable "efs_dns_name" {
+  description = "DNS name of the EFS file system"
+  type        = string
+}
+

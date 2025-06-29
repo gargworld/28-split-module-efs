@@ -57,7 +57,7 @@ resource "aws_launch_template" "ec2_template" {
      name = aws_iam_instance_profile.ec2_profile.name
    }
 
-  vpc_security_group_ids = [var.security_group_value]
+#  vpc_security_group_ids = [var.security_group_value]
 
 #  network_interfaces {
 #    associate_public_ip_address = true
@@ -69,6 +69,8 @@ resource "aws_launch_template" "ec2_template" {
     associate_public_ip_address = true
     delete_on_termination       = true
     device_index                = 0
+    subnet_id                   = var.subnet_id
+    security_groups             = [var.security_group_value]
   }
 
   user_data = base64encode(<<-EOF
@@ -116,38 +118,6 @@ resource "aws_autoscaling_group" "ec2_asg" {
   }
 }
 
-resource "aws_efs_file_system" "system_efs" {
-  creation_token = "system-efs"
-  tags = {
-    Name = "ArtifactoryEFS"
-  }
-}
-
-resource "aws_security_group" "efs_sg" {
-  name        = "efs-sg"
-  description = "Allow NFS access"
-  vpc_id      = var.vpc_id
-
-  ingress {
-    from_port   = 2049
-    to_port     = 2049
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "efs-sg"
-  }
-}
-
-
 #################### creating aws_autoscaling_lifecycle_hook  ############
 
 resource "aws_autoscaling_lifecycle_hook" "terminate_hook" {
@@ -156,15 +126,6 @@ resource "aws_autoscaling_lifecycle_hook" "terminate_hook" {
   lifecycle_transition   = "autoscaling:EC2_INSTANCE_TERMINATING"
   default_result         = "CONTINUE"
   heartbeat_timeout      = 300
-}
-
-
-############################ EFS mount ##################################
-
-resource "aws_efs_mount_target" "system_efs_mount" {
-  file_system_id  = aws_efs_file_system.system_efs.id
-  subnet_id       = var.subnet_id
-  security_groups = [aws_security_group.efs_sg.id]
 }
 
 ############################ Wait for SSH null_resource ##################### NO1
@@ -361,7 +322,7 @@ cd /tmp/ansible-infra-roles
 echo "Running Ansible playbook..."
 ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook site.yml \
   -i /tmp/inventory/hosts \
-  --extra-vars "efs_dns_name=${aws_efs_file_system.system_efs.dns_name}" \
+  --extra-vars "efs_dns_name=${var.efs_dns_name}" \
   --ssh-extra-args='-o StrictHostKeyChecking=no -o ConnectTimeout=5'
 EOT
   }
