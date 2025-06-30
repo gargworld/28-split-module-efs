@@ -41,6 +41,4 @@ resource "aws_efs_mount_target" "system_efs_mount" {
   file_system_id  = aws_efs_file_system.system_efs[0].id
   subnet_id       = var.subnet_id
   security_groups = [aws_security_group.efs_sg[0].id]
-
 }
-
