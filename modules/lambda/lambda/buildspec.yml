@@ -9,7 +9,7 @@ phases:
     runtime-versions:
       python: 3.9
     commands:
-      - echo "Installing general packages ... $(date)"
+      - echo "Installing general packages ... ${date}"
       - yum install -y unzip wget jq
 
       - echo "Installing Terraform & Terragrunt and Ansible ..."
@@ -25,15 +25,15 @@ phases:
 
   pre_build:
     commands:
-      - echo "Setting up for Terragrunt apply... $(date)"
+      - echo "Setting up for Terragrunt apply... ${date}"
       - /usr/local/bin/terragrunt run-all init
 
   build:
     commands:
-      - echo "Running terragrunt run-all apply from repo root at $(date)"
+      - echo "Running terragrunt run-all apply from repo root at ${date}"
       - /usr/local/bin/terragrunt run-all apply --auto-approve --terragrunt-non-interactive
 
   post_build:
     commands:
-      - echo "Terragrunt apply completed at $(date)"
+      - echo "Terragrunt apply completed at ${date}"
 
