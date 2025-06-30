@@ -57,14 +57,6 @@ resource "aws_launch_template" "ec2_template" {
      name = aws_iam_instance_profile.ec2_profile.name
    }
 
-#  vpc_security_group_ids = [var.security_group_value]
-
-#  network_interfaces {
-#    associate_public_ip_address = true
-#    subnet_id                   = var.subnet_id
-#    security_groups             = [var.security_group_value]
-#  }
-
   network_interfaces {
     associate_public_ip_address = true
     delete_on_termination       = true
