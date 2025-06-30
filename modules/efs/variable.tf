@@ -8,3 +8,8 @@ variable "subnet_id" {
   type        = string
 }
 
+variable "enable_create" {
+  description = "Flag to enable or disable EFS creation"
+  type        = bool
+  default     = true
+}

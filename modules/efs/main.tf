@@ -1,14 +1,8 @@
 ############################ EFS module ##################################
 # modules/efs/main.tf
 
-# Try to read an existing EFS file system
-#data "aws_efs_file_system" "existing" {
-#  creation_token = "system-efs"
-#}
-
 # Only create a new one if the above lookup fails (optional step handled below)
 resource "aws_efs_file_system" "system_efs" {
-#  count          = length(data.aws_efs_file_system.existing.id) > 0 ? 0 : 1
   count = var.enable_create ? 1 : 0
   creation_token = "system-efs"
 
@@ -18,6 +12,7 @@ resource "aws_efs_file_system" "system_efs" {
 }
 
 resource "aws_security_group" "efs_sg" {
+  count       = var.enable_create ? 1 : 0
   name        = "efs-sg"
   description = "Allow NFS access"
   vpc_id      = var.vpc_id
@@ -42,7 +37,10 @@ resource "aws_security_group" "efs_sg" {
 }
 
 resource "aws_efs_mount_target" "system_efs_mount" {
-  file_system_id  = aws_efs_file_system.system_efs.id
+  count           = var.enable_create ? 1 : 0
+  file_system_id  = aws_efs_file_system.system_efs[0].id
   subnet_id       = var.subnet_id
-  security_groups = [aws_security_group.efs_sg.id]
+  security_groups = [aws_security_group.efs_sg[0].id]
+
 }
+

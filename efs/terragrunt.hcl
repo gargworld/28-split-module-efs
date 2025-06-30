@@ -14,7 +14,6 @@ terraform {
 }
 
 inputs = {
-
   vpc_id    = dependency.network.outputs.vpc_id
   subnet_id = dependency.network.outputs.subnet_id
   enable_create = true
