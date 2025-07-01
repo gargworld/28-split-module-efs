@@ -30,7 +30,7 @@ inputs = {
   private_key_file     = local.private_key_dest_path
   private_key_source   = local.private_key_source_path
 
-  #aws_region           = dependency.network.outputs.aws_region
+  aws_region           = dependency.network.outputs.aws_region
   vpc_id               = dependency.network.outputs.vpc_id
   subnet_id            = dependency.network.outputs.subnet_id
   security_group_value = dependency.network.outputs.security_group_id
